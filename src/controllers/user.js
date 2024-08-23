@@ -127,7 +127,7 @@ const loginUser = async (req, res) => {
     }
 
     return res.status(200)
-    .cookie("acessToken", accessToken, options)
+    .cookie("accessToken", accessToken, options)
     .cookie("refreshToken", refreshToken, options)
     .json( new ApiResponse(
             200, 
@@ -159,7 +159,7 @@ const logoutUser = async(req, res) => {
     }
 
     return res.status(200)
-    .clearCookie("acessToken", options)
+    .clearCookie("accessToken", options)
     .clearCookie("refreshToken", options)
     .json( new ApiResponse(
             200, 
