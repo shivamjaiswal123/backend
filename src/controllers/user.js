@@ -13,7 +13,7 @@ const generateAccessAndRefreshToken = async ( userId ) => {
         const refreshToken = user.generateRefreshToken();
 
         user.refreshToken = refreshToken;
-        await user.save({ validateBeforeState: false })
+        await user.save({ validateBeforeSave: false })
 
         return { accessToken, refreshToken };
 
@@ -179,7 +179,7 @@ const refreshAccessToken = async (req, res) => {
         throw new ApiError(401, "Unathorized Access")
     }
 
-    const decodedToken = jwt.verify(incomingRefreshToken, REFRESH_TOKEN_SECRET);
+    const decodedToken = jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET);
 
     const user = await User.findById(decodedToken._id);
     if(!user){
@@ -211,9 +211,58 @@ const refreshAccessToken = async (req, res) => {
 
 }
 
+const changeCurrentPassword = async(req, res) => {
+    const { oldPassword, newPassword} = req.body;
+
+    // search user by id in db. Putting all the info of user through middleware
+    const user = await User.findById(user._id);
+    
+    // check if old password is correct
+    const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
+
+    if(!isPasswordCorrect){
+        throw new ApiError(400, "Invalid old password");
+    }
+
+    user.password = newPassword
+    await user.save({ validateBeforeSave: false });
+
+    return res.status(200)
+    .json( new ApiResponse(200, {},"Password change succussfully"))
+}
+
+const getCurrentUser = async(req, res) => {
+    res.status(200).json(
+        new ApiResponse(200, req.user, "Current user fetched")
+    )
+}
+
+const updateAccountDetails = async(req, res) => {
+    const { fullname, email } = req.body;
+    if(!( fullname || email )){
+        throw new ApiError(400, "All fields are required");
+    }
+
+    const user = User.findByIdAndUpdate(
+        req.user._id,
+        {
+            $set: {
+                fullname,
+                email
+            }
+        }, 
+        {new: true} 
+        ).select("--password")
+
+        return res.status(200).json(200, user, "Account details updated succussfully")
+}
+
 module.exports = { 
     registerUser,
     loginUser,
     logoutUser,
-    refreshAccessToken
+    refreshAccessToken,
+    changeCurrentPassword,
+    getCurrentUser,
+    updateAccountDetails
 }
